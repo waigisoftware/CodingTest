@@ -1,0 +1,15 @@
+platform :ios, '8.0'
+
+target 'WeatherCodingTest' do
+
+pod "AFNetworking"
+pod "MBProgressHUD"
+	
+end
+
+target 'WeatherCodingTestTests' do
+    
+    pod "AFNetworking"
+    
+end
+
