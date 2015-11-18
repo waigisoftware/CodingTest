@@ -56,13 +56,14 @@
                                                          
                                                      }
                                                      failure:^(NSURLSessionDataTask *task, NSError *error) {
-                                                         NSString *errormessage = [NSString stringWithFormat:@"Failed to get weather forecast at your location. Reason : %@", error];
+                                                         NSString *errormessage = [NSString stringWithFormat:@"Failed to get weather forecast at your location. \nReason : %@", error.localizedDescription];
                                                          
                                                          [WCTForecast postResultNotificationSucceeded:NO
                                                                                              forecast:nil
                                                                                               message:errormessage];
                                                      }
      ];
+
 }
 
 + (void)postResultNotificationSucceeded:(BOOL) succeeded
@@ -71,7 +72,7 @@
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:WCTNotificationForecastRetrieved
                                                         object:nil
-                                                      userInfo:@{WCTKeySucceed : @YES,
+                                                      userInfo:@{WCTKeySucceed : [NSNumber numberWithBool:succeeded],
                                                                  WCTKeyForecast : forecast ? : [NSNull null],
                                                                  WCTKeyErrorMessage : message ? : [NSNull null]}];
 }

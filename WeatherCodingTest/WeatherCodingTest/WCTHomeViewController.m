@@ -14,9 +14,13 @@
 @property (weak, nonatomic) IBOutlet UIImageView *iconImageView;
 @property (weak, nonatomic) IBOutlet UILabel *temperatureLabel;
 @property (weak, nonatomic) IBOutlet UILabel *summaryLabel;
+@property (weak, nonatomic) IBOutlet UILabel *messageLabel;
 
 @property (strong, nonatomic) NSObject *forecastRetrievedObserver;
 @property (strong, nonatomic) CLLocationManager *locationManager;
+@property (nonatomic) BOOL allowRetrieveForecast;
+
+- (IBAction)onRefresh:(id)sender;
 
 @end
 
@@ -28,6 +32,8 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
+    
+    _allowRetrieveForecast = YES;
     
     [self resetUI];
     [self setupLocationManager];
@@ -71,8 +77,9 @@
 
 - (void)resetUI {
     _iconImageView.image = [UIImage imageNamed:@"unknown"];
-    _temperatureLabel.text = @"";
-    _summaryLabel.text = @"";
+    _temperatureLabel.text = nil;
+    _summaryLabel.text = nil;
+    _messageLabel.text = nil;
 }
 
 - (void)handleForecastRetrievedNotification:(NSNotification *)notification {
@@ -80,7 +87,7 @@
     
     NSDictionary *result = [notification userInfo];
     if (result) {
-        BOOL succeeded = [result objectForKey:WCTKeySucceed];
+        BOOL succeeded = [(NSNumber *)[result objectForKey:WCTKeySucceed] boolValue];
         
         // do UI update accordingly
         if (succeeded) {
@@ -88,14 +95,11 @@
             _iconImageView.image = forecast.iconImage;
             _temperatureLabel.text = forecast.celsiusTemperature;
             _summaryLabel.text = forecast.summary;
+            _messageLabel.text = nil;
         } else {
-            NSString *message = [result objectForKey:WCTKeyErrorMessage];
             [self resetUI];
-            
-            [MBProgressHUD showMessage:message
-                                    in:self.view
-                          dismissAfter:3
-                              animated:YES];
+            NSString *message = [result objectForKey:WCTKeyErrorMessage];
+            _messageLabel.text = message;
         }
     }
 }
@@ -104,19 +108,38 @@
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray<CLLocation *> *)locations
 {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
+    if (_allowRetrieveForecast) {
+        _allowRetrieveForecast = NO;
         [WCTForecast retrieveForecastAtLatitude:[NSNumber numberWithDouble:manager.location.coordinate.latitude]
                                       longitude:[NSNumber numberWithDouble:manager.location.coordinate.longitude]];
         
         [MBProgressHUD showMessage:@"Loading weather forecast"
                                 in:self.view
-                      dismissAfter:3000
+                      dismissAfter:30
                           animated:YES];
-    });
+    }
     
     // stop updating once got a location
     [_locationManager stopUpdatingLocation];
+}
+
+- (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error {
+    [self resetUI];
+    _allowRetrieveForecast = YES;
+    
+    [[[UIAlertView alloc] initWithTitle:@"Failed to get your location"
+                                message:@"Please enable location service in setting."
+                               delegate:nil
+                      cancelButtonTitle:@"OK"
+                      otherButtonTitles: nil] show];
+}
+
+#pragma mark - Button action
+
+- (IBAction)onRefresh:(id)sender {
+    [self resetUI];
+    _allowRetrieveForecast = YES;
+    [_locationManager startUpdatingLocation];
 }
 
 @end

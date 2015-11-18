@@ -23,7 +23,10 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        self.sessionManager = [[AFHTTPSessionManager alloc] initWithBaseURL:[NSURL URLWithString:ForecastAPIBaseUrl]];
+        NSURLSessionConfiguration *configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
+        configuration.requestCachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
+        self.sessionManager = [[AFHTTPSessionManager alloc] initWithBaseURL:[NSURL URLWithString:ForecastAPIBaseUrl]
+                                                       sessionConfiguration:configuration];
     }
     return self;
 }
